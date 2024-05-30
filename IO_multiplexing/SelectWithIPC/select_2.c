@@ -46,50 +46,42 @@ void child_process(int idenfier, int *pCnt, int shmId)
     }
     puts("children while loop start");
 
+    int sl = 0;
 	while(1)
 	{
-        int sl = (random()%5) + 1;
 	    num++;
 
         shared_mutex_lock(&mtx);
-        if (*pCnt >= 10)
+        (*pCnt)++;
+        if (*pCnt >= 11)
         {
             shared_mutex_unlock(&mtx);
+
+            //strncpy(msg, "Exit", strlen("Exit")+1);
+            sprintf(msg, "Exit%c", '\0');
+            n = write(writefd, msg, strlen(msg)+1);
+            printf("to fifo(from %d): %d\n", getpid(), n);
             break;
         }
         else 
         {
-            (*pCnt)++;
             shared_mutex_unlock(&mtx);
         }
 
+        sl = (random()%5) + 1;
         sleep(sl);
-  	    sprintf (msg, "Test message %dth from client %d(%ds)", num, getpid(), sl);
+  	    sprintf(msg, "Test message %dth from client %d(%ds)", num, getpid(), sl);
   	    n = write(sockfd, msg, strlen(msg)+1);	/* Send message */
-        if ( n < 0 )
+        if (n < 0)
         {
-            printf("write failed : %d\n", getpid());
-            break;
+            fprintf(stderr, "write failed : %d(%s)\n", getpid(), strerror(errno));
         }
         else
         {
             n = write(writefd, msg, strlen(msg)+1);
             if (n < 0)
             {
-                printf("write(fifo) failed : %d\n", getpid());
-                break;
-            }
-        }
-
-        n = read(sockfd, msg, 99);
-        msg[n] = '\0';
-        if ( n > 0 )
-        {
-            char* szExit = "Exit";
-            if (strncmp(msg, szExit, strlen(msg)) == 0)
-            {
-                n = write(writefd, msg, strlen(msg)+1);
-                break;
+                fprintf(stderr, "write(fifo) failed : %d\n", getpid());
             }
         }
     }
@@ -106,10 +98,15 @@ void child_process(int idenfier, int *pCnt, int shmId)
         exit(8);
     }
     */
-    close(sockfd);
-    close(writefd);
-    unlink(fifoName);
-    shared_mutex_close(&mtx);
+
+    if (close(sockfd)==-1)
+        exit(10);
+    if (close(writefd) == -1)
+        exit(11);
+    if (unlink(fifoName) == -1)
+        exit(12);
+    if (shared_mutex_close(&mtx) == -1)
+        exit(13);
     //shared_mutex_destroy(&mtx);
 }
 
@@ -221,31 +218,26 @@ int main()
 		            }
 				}
 		    } // for loop about fds
+            shared_mutex_lock(&mtx);
+	        if (*pCnt >= 10)
+	            {
+                    shared_mutex_unlock(&mtx);
+	                break;
+                }
+            shared_mutex_unlock(&mtx);
         } // if ret if okay
-
-        shared_mutex_lock(&mtx);
-	    if (*pCnt >= 10)
-	    {
-            shared_mutex_unlock(&mtx);
-            strncpy(buffer, "Exit", strlen("Exit")+1);
-	        puts("cnts over 10");
-            for (i = 0; i < 5 ; i++)
-            {
-                sleep(5);
-                n = write(fds[i], buffer, strlen(buffer)+1);
-            }
-	        break;
-        }
-        else
-        {
-            shared_mutex_unlock(&mtx);
-            strncpy(buffer, "no", strlen("no")+1);
-            for (i = 0; i < 5 ; i++)
-            {
-                n = write(fds[i], buffer, strlen(buffer)+1);
-            }
-        }
     }
+
+    //while (waitpid(-1, NULL, 0) > 0)
+    while (waitpid(-1, NULL, WNOHANG) > 0)
+    {
+        /*
+        if (errno == ECHILD)
+            break;
+            */
+        continue;
+    }
+
 
     close(sockfd);
     for (i = 0 ; i < 5 ; i++)
@@ -263,20 +255,16 @@ int main()
     }
     if (shared_mutex_close(&mtx))
     {
-        return 1;
+        return 10;
     }
+    /*
     if (shared_mutex_destroy(&mtx))
     {
         return 1;
     }
-
-    //while (waitpid(-1, NULL, 0))
-    while (!waitpid(-1, NULL, WNOHANG))
-    {
-        if (errno == ECHILD)
-            break;
-    }
+    */
     
+    puts("__5");
 
     return 0;
 }

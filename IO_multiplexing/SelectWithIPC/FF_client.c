@@ -24,35 +24,19 @@ int main(int argc, char *argv[])
     }
 
 
+    int n = 0;
     puts("in while loop for readfd");
-    while (1)
+    while ((n = read(readfd, buff, 100)) > 0)
     {
-        int n;
-        if ((n = read(readfd, buff, 99)) < 0)
+        buff[n] = '\0';
+
+        if ( strncmp(buff, "Exit", strlen("Exit")) == 0)
         {
-            puts("Err in read");
-            printf("n : %d, buff : %s\n", n, buff);
+            printf("END : %s\n", argv[1]);
             break;
         }
-        if ( n != 0 ) // EOF
-        { 
-            buff[n] = '\0';
 
-            if ( strncmp(buff, "Exit", strlen(buff)) == 0)
-            {
-                printf("END : %s\n", argv[1]);
-                break;
-            }
-
-            printf("<%s> %s\n", argv[1], buff);
-        }
-        /*
-        else if ( n == 0 )
-        {
-            puts("ENDED");
-            break;
-        }
-        */
+        printf("<%s> %s\n", argv[1], buff);
     }
 
     close(readfd);

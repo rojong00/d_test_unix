@@ -8,7 +8,8 @@ int main()
     printf("strlen of tmp : %d\n", (int)strlen(tmp));
 
     //test size 12 over than sizeof(tmp)
-    fgets(tmp, 12, stdin); 
+    //fgets(tmp, 12, stdin); 
+    fgets(tmp, sizeof(tmp), stdin); 
 
     printf("tmp : %s\n", tmp);
     printf("tmp size of %ld, strlen of tmp : %ld\n", sizeof(tmp), strlen(tmp));

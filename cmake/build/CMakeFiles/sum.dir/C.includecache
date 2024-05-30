@@ -1,0 +1,16 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../lib/hdr/sum.h
+
+/home/jhoh4-linux/Code/test/cmake/lib/sum.c
+sum.h
+/home/jhoh4-linux/Code/test/cmake/lib/sum.h
+stdio.h
+-
+

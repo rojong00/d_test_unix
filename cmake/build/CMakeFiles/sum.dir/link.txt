@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC   -shared -Wl,-soname,libsum.so -o libsum.so CMakeFiles/sum.dir/lib/sum.c.o 

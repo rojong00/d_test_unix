@@ -37,8 +37,14 @@ int main(int argc, char *argv[])
         if ( n != 0 ) // EOF
         { 
             buff[n] = '\0';
-            printf("<msg> %s\n", buff);
-            puts("in while loop for readfd");
+
+            if ( strncmp(buff, "Exit", strlen(buff)) == 0)
+            {
+                printf("END : %s\n", argv[1]);
+                break;
+            }
+
+            printf("<%s> %s\n", argv[1], buff);
         }
         /*
         else if ( n == 0 )
@@ -49,5 +55,6 @@ int main(int argc, char *argv[])
         */
     }
 
+    close(readfd);
     return 0;
 }

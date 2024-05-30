@@ -1,0 +1,1 @@
+/usr/bin/cc   -rdynamic CMakeFiles/main.dir/src/main.c.o  -o main -Wl,-rpath,/home/jhoh4-linux/Code/test/cmake/build libsum.so 

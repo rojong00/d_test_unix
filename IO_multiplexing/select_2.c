@@ -8,17 +8,20 @@
 #include <errno.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <sys/shm.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <pthread.h>
 
 #define MAXBUF 256
 
-void child_process(int idenfier)
+static pthread_mutex_t s_mutex;
+
+void child_process(int idenfier, int *pCnt)
 {
-	sleep(2);
 	char msg[MAXBUF];
 	struct sockaddr_in addr = {0,};
 	int n, sockfd, num = 0;
@@ -29,19 +32,24 @@ void child_process(int idenfier)
 	addr.sin_port = htons(2000);
 	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-	connect(sockfd, (struct sockaddr*)&addr, sizeof(addr));
+	if (connect(sockfd, (struct sockaddr*)&addr, sizeof(addr)) != 0)
+    {
+        printf("err in sockfd of child\n");
+        exit(-1);
+    }
 
     int writefd;
     char fifoName[10];
     sprintf(fifoName, "fifo_%d", idenfier);
-    puts("1");
     if ( (writefd = open(fifoName, O_WRONLY)) > 2)
     {
         puts("write fd already made, and will use it");
     }
+    tmp
+        test
     else
     {
-        close(writefd);
+        //close(writefd);
         if (mkfifo(fifoName, 0666) < 0)
         {
             perror("err in making fifo");
@@ -51,19 +59,20 @@ void child_process(int idenfier)
         {
             puts("err in open write fd 2");
         }
-        puts("2");
     }
-    puts("3");
 
 	while(1)
 	{
-        int sl = (random() % 10 ) +  1;
+        int sl = (random() % 5 ) +  1;
 	    num++;
+
+        pthread_mutex_lock(&s_mutex);
+        *pCnt++;
+        pthread_mutex_unlock(&s_mutex);
+
         sleep(sl);
-        puts("4");
   	    sprintf (msg, "Test message %dth from client %d(%ds)", num, getpid(), sl);
-  	    n = write(sockfd, msg, strlen(msg));	/* Send message */
-        puts("5");
+  	    n = write(sockfd, msg, strlen(msg)+1);	/* Send message */
         if ( n < 0 )
         {
             printf("write failed : %d\n", getpid());
@@ -71,15 +80,37 @@ void child_process(int idenfier)
         }
         else
         {
-            n = write(writefd, msg, strlen(msg));
+            n = write(writefd, msg, strlen(msg)+1);
             if (n < 0)
             {
                 printf("write(fifo) failed : %d\n", getpid());
                 break;
             }
         }
+
+        n = read(sockfd, msg, 99);
+        msg[n] = '\0';
+        if ( n > 0 )
+        {
+            char* szExit = "Exit";
+            if (strncmp(msg, szExit, strlen(msg)) == 0)
+            {
+                n = write(writefd, msg, strlen(msg)+1);
+                break;
+            }
+        }
     }
 
+    if (shmdt(p) == -1)
+    {
+        puts("Err in shmdt");
+        exit(7);
+    }
+    if (shmctl(shmid, IPC_RMID, 0) == -1)
+    {
+        puts("Err in shmctt");
+        exit(8);
+    }
     close(sockfd);
     close(writefd);
     unlink(fifoName);
@@ -96,15 +127,6 @@ int main()
 	int sockfd;
 	fd_set rset, tmpSet;
     struct timeval timeout;
-	for(i=0;i<5;i++)
-	{
-		if(fork() == 0)
-		{
-			child_process(i);
-			exit(0);
-		}
-	}
-
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	memset(&addr, 0, sizeof (addr));
@@ -114,12 +136,39 @@ int main()
 	bind(sockfd,(struct sockaddr*)&addr ,sizeof(addr));
 	listen (sockfd, 5); 
 
+    //shared mem
+    key_t shmKey;
+    int shmId = 0;
+    int *pCnt = NULL;
+    shmKey = ftok ("/dev/null", 5);       
+    printf("shmkey for p = %d\n", shmKey);
+    if ((shmId = shmget(shmkey, sizeof(int), 0644 | IPC_CREAT)) < 0)
+    {
+        perror ("shmget\n");
+        exit (5);
+    }
+    p = (int *)shmat(shmid, NULL, 0);
+    *p = 0;
+
+	for(i=0;i<5;i++)
+	{
+		if(fork() == 0)
+		{
+			child_process(i, pCnt);
+			exit(0);
+		}
+	}
+
 	for (i=0;i<5;i++) 
 	{
 	  memset(&client, 0, sizeof (client));
 	  addrLen = sizeof(client);
 	  fds[i] = accept(sockfd,(struct sockaddr*)&client, &addrLen);
-	  if(fds[i] > max)
+      if (fds[i] == -1)
+      {
+          exit(-1);
+      }
+	  if (fds[i] > max)
           max = fds[i];
 	}
   
@@ -127,7 +176,6 @@ int main()
 	for (i = 0; i< 5; i++ ) {
 		FD_SET(fds[i], &rset);
 	}
-    int cnt = 0;
     while(1){
         tmpSet = rset;
         timeout.tv_sec = 10;
@@ -140,11 +188,13 @@ int main()
             puts("Err in select()\n");
             exit(1);
         }
+        /*
         else if ( ret == 0 )
         {
             puts("Err in select() timeout\n");
             exit(1);
         }
+        */
         else{
 		    //printf("RET is %d\n", ret);
 			for(i=0;i<5;i++)
@@ -160,21 +210,56 @@ int main()
 		            }
 		            else
 		            {
-		                cnt++;
-					    puts(buffer);
+		                //cnt++;
+                        puts(buffer);
 		            }
 				}
 		    } // for loop about fds
         } // if ret if okay
 
-	    if ( cnt > 10 )
+	    if (pCnt >= 10)
 	    {
+            strncpy(buffer, "Exit", strlen("Exit")+1);
 	        puts("cnts over 10");
+            for (i = 0; i < 5 ; i++)
+            {
+                sleep(5);
+                n = write(fds[i], buffer, strlen(buffer)+1);
+            }
 	        break;
+        }
+        else
+        {
+            strncpy(buffer, "no", strlen("no")+1);
+            for (i = 0; i < 5 ; i++)
+            {
+                n = write(fds[i], buffer, strlen(buffer)+1);
+            }
         }
     }
 
     close(sockfd);
-    sleep(10);
+    for (i = 0 ; i < 5 ; i++)
+        close(fds[i]);
+
+    if (shmdt(p) == -1)
+    {
+        puts("Err in shmdt");
+        exit(7);
+    }
+    if (shmctl(shmid, IPC_RMID, 0) == -1)
+    {
+        puts("Err in shmctt");
+        exit(8);
+    }
+
+    //while (waitpid(-1, NULL, 0))
+    while (!waitpid(-1, NULL, WNOHANG))
+    {
+        if (errno == ECHILD)
+            break;
+    }
+    
+
     return 0;
 }

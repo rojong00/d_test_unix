@@ -27,7 +27,6 @@ int main (int argc, char **argv){
         perror ("shmget\n");
         exit (1);
     }
-
     p = (int *) shmat (shmid, NULL, 0);   /* attach p to shared memory */
     *p = 0;
     printf ("p=%d is allocated in shared memory.\n\n", *p);
