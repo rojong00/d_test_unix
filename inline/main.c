@@ -1,4 +1,5 @@
 #include "inline.h"
+//extern inline int* max(int* a, int* b);
 
 int main(int argc, char* argv[])
 {

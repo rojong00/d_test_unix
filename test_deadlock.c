@@ -6,7 +6,7 @@ sem_t semaphore[3];
 
 void *threadRoutine(void *argumentPointer)
 {
-    long id = (long)argumentPointer;
+    long id = *(long*)argumentPointer;
     int i;
     for (i=0 ; i<10000 ; i++)
     {
@@ -38,8 +38,10 @@ int main()
     sem_init(&semaphore[0], 0, 1);
     sem_init(&semaphore[1], 0, 1);
 
-    pthread_create(&threadDs[0], NULL, threadRoutine, (void*)0);
-    pthread_create(&threadDs[1], NULL, threadRoutine, (void*)1);
+    long tmp1 = 0;
+    long tmp2 = 0;
+    pthread_create(&threadDs[0], NULL, threadRoutine, (void*)&tmp1);
+    pthread_create(&threadDs[1], NULL, threadRoutine, (void*)&tmp2);
 
 
     pthread_join(threadDs[0], NULL);

@@ -5,18 +5,18 @@
 
 #define BULK
 
-enum ENUM
+typedef enum
 {
     my_A,
     my_B,
     my_C
-};
+} ENUM;
 
 static char *lb = NULL;
 
 int main()
 {
-    unsigned char* text = "text";
+    char* text = "text";
     long tmp0 = 9;
     long long tmp1 = 10;
     int32_t tmp2 = 11;
@@ -28,14 +28,14 @@ int main()
     printf("tmp3 : %llu(size:%ld)\n", tmp3, sizeof(tmp3));
 
     printf("enum test : %d\n", my_A);
-    enum ENUM tmp4 = my_B;
+    ENUM tmp4 = my_B;
     printf("enum test : %d\n", tmp4);
 
     printf("%s\n", text);
 
     lb = (char*)malloc(sizeof(char)*100);
 
-    int i = 0;
+    size_t i = 0;
     for (i = 0 ; i < strlen(text) ; i++)
     {
         printf("text : %02X\n", (*(text+i)));

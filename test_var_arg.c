@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 int vaPrint(const char* arg, ...)
 {
@@ -42,13 +43,19 @@ int vaPrint(const char* arg, ...)
             i++;
         }
     }
-    va_end(var, arg);
+    va_end(var);
 }
 
 int main(int argc, char* argv[])
 {
     vaPrint("%d %d %c %s", 3, 10, 'c', "abc");
     
+    printf("And test strchr func.\n");
+    
+    char* cstring = "abcd e pw xyz";
+    char ch = 'p';
+    char* ptr = strchr(cstring, (int)ch);
+    printf("cstring is \"%s\", ptr is \"%s\"\n", cstring, ptr);
 
 
     return 0;

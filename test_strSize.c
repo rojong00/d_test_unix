@@ -56,6 +56,15 @@ int main(int argc, char *argv[])
     sprintf(arg4, "%s", NULL);
     printf("test arg4 4 : %s\n", arg4);
     */
+    unsigned char tmptmptmp = 'k';
+    printf("tmptmptmp in %c : %05X %05x %05X %05x\n", tmptmptmp, (char*)tmptmptmp, (char*)tmptmptmp, tmptmptmp, tmptmptmp);
+    char tmpCharTest = 'k';
+    printf("char to int test : %d %d\n", tmptmptmp, tmpCharTest);
+
+    int tmpIntTest = 70;
+    printf("int to char test : %d %c\n", tmpIntTest, tmpIntTest);
+    int tmpIntTest2 = 999;
+    printf("int to char test : %d %c\n", tmpIntTest2, tmpIntTest2);
     
     return 0;
 }
