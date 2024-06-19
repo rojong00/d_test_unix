@@ -3,7 +3,7 @@
 #include <string.h>
 
 #define MAX 255
-unsigned short CRC_16_ANSI[256] =
+unsigned short CRC_16_MODBUS[256] =
 {
     0x0000, 0xC0C1, 0xC181, 0x0140, 0xC301, 0x03C0, 0x0280, 0xC241, 
     0xC601, 0x06C0, 0x0780, 0xC741, 0x0500, 0xC5C1, 0xC481, 0x0440,
@@ -39,8 +39,9 @@ unsigned short CRC_16_ANSI[256] =
 	0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 };
 
-unsigned short crc_func1(unsigned char* arg1, unsigned char len);
-unsigned short crc_func2(unsigned char* arg1, unsigned char len);
+unsigned short crc_func1(const unsigned char* arg1, unsigned char len);
+unsigned short crc_func2(const unsigned char* arg1, unsigned char len);
+unsigned short crc_func3(const unsigned char* arg1, unsigned char len);
 int main(int argc, char* argv[])
 {
     uint8_t aucCmdBuf[MAX] = {0xFD, 0x08, 0x0018, 
@@ -55,7 +56,7 @@ int main(int argc, char* argv[])
     //
     int i = 0;
     unsigned char code[25] = {0,};
-    unsigned short ret = 0;
+    unsigned short ret1 = 0, ret2 = 0;
 
     if (argc < 2)
     {
@@ -82,22 +83,76 @@ int main(int argc, char* argv[])
     printf("\n");
 
     
-    ret = crc_func1(code, ucTotalPacketLength+2); 
-    printf("ret : %d(0x%x)\n", ret, ret);
+    ret1 = crc_func1(code, ucTotalPacketLength+2); 
+    printf("ret1 : %d(0x%x)\n", ret1, ret1);
+    ret2 = crc_func2(code, ucTotalPacketLength+2);
+    printf("ret2 : %d(0x%x)\n", ret2, ret2);
+    ret2 = crc_func3(code, ucTotalPacketLength+2);
+    printf("ret3 : %d(0x%x)\n", ret2, ret2);
+
+    printf("\nret1 and ret3 is right!\n");
+    for (i = 0; i < 10; i++)
+    {
+        printf("%02X", *(code+i));
+    }
+    printf("%X\n", ret1); 
+    /*
+    uint16_t answer[13] = {0,};
+    for (i = 0; i < 10; i++)
+    {
+        answer[i] = *(code+i);
+    }
+    answer[10] = ret1;
+    printf("yaya\n");
+    for (i = 0; i < 11; i++)
+        printf("%X", answer[i]);
+    printf("\n");
+    */
     return 0;
 }
 
-unsigned short crc_func1(unsigned char* arg1, unsigned char len)
+unsigned short crc_func1(const unsigned char* arg1, unsigned char len)
 {
-    int ret = 0;
+    unsigned short ret = 0;
     while (len--)
     {
-        ret = ((ret >> 8) ^ CRC_16_ANSI[(ret ^ *arg1++) & 0xff]);
+        ret = ((ret >> 8) ^ CRC_16_MODBUS[(ret ^ *arg1++) & 0xff]);
     }
     return ret;
 }
 
-unsigned short crc_func2(unsigned char* arg1, unsigned char len)
+unsigned short crc_func2(const unsigned char* arg1, unsigned char len)
 {
+    uint16_t CRC = 0xFFFF;
+    const uint16_t MODBUS = 0xA001;
+    int i = 0;
 
+    while (len--)
+    {
+        CRC ^= *arg1++ << 8;
+        for (i = 0; i < 8; i++)
+        {
+            CRC = CRC & 0x0001 ? (CRC >> 1) ^ MODBUS : CRC >> 1;
+        }
+    }
+
+    return CRC;
+}
+
+unsigned short crc_func3(const unsigned char* arg1, unsigned char len)
+{
+    uint16_t CRC = 0x0000;
+    const uint16_t MODBUS = 0xA001;
+    int i = 0;
+
+    while (len--)
+    {
+        CRC ^= *arg1++;
+        for (i = 0; i < 8; i++)
+        {
+            CRC = CRC & 0x0001 ? (CRC >> 1) ^ MODBUS : CRC >> 1;
+        }
+    }
+
+    return CRC;
 }
